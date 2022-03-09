@@ -1,0 +1,48 @@
+server:
+  port: 8085
+
+resilience4j.circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 5
+        slidingWindowType: COUNT_BASED
+        slowCallDurationThreshold: 2s
+        maxWaitDurationInHalfOpenState: 10s
+        waitDurationInOpenState: 10s
+        slowCallRateThreshold: 40
+        waitInterval: 10000
+        failureRateThreshold: 40
+        permittedNumberOfCallsInHalfOpenState: 2
+        registerHealthIndicator: true
+        allowHealthIndicatorToFail: true
+    metrics:
+      enabled: true
+    instances:
+      data:
+        baseConfig: default
+
+spring:
+  cloud:
+    discovery:
+      enabled: false
+    function:
+      definition: dataConsumer
+    stream:
+      rabbit:
+        bindings:
+          dataConsumer-in-0:
+            destination: local.exchange
+            consumer:
+              bindQueue: false
+              queueNameGroupOnly: true
+              declareExchange: false
+              bindingRoutingKey: smfexportconsumer
+              exchangeType: direct
+      function:
+        bindings:
+          dataConsumer-in-0:
+            destination: local.exchange
+      bindings:
+        dataConsumer-in-0:
+          group: smfexportconsumer
+  rabbitmq.addresses:  amqp://guest:guest@localhost/

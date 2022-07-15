@@ -37,7 +37,8 @@ spring:
               queueNameGroupOnly: true
               declareExchange: false
               bindingRoutingKey: smfexportconsumer
-              exchangeType: direct
+              concurrency: 2
+              maxConcurrency: 5
       function:
         bindings:
           dataConsumer-in-0:
@@ -45,4 +46,4 @@ spring:
       bindings:
         dataConsumer-in-0:
           group: smfexportconsumer
-  rabbitmq.addresses:  amqp://guest:guest@localhost/
+  rabbitmq.addresses: amqp://guest:guest@localhost/

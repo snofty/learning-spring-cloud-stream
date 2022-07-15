@@ -32,6 +32,8 @@ public class DataConsumer implements Consumer<Flux<Message<String>>> {
     private final UserRepository userRepository;
     private final ExecutorService executorService;
 
+    private int count=-1;
+
 
     public DataConsumer(WebClient webClient, DefaultUriBuilderFactory uriBuilderFactory, UserRepository userRepository,
                         ScheduledExecutorService scheduledExecutor) {
@@ -53,6 +55,20 @@ public class DataConsumer implements Consumer<Flux<Message<String>>> {
                 .onErrorContinue((throwable, o) -> logger.error(throwable.getMessage()))
                 .subscribe();*/
         messageFlux.doOnNext(logger::info)
+                .map(stringMessage -> {
+                    long start = System.currentTimeMillis();
+                    logger.info("inside i got data count: {}", count);
+                    try {
+                        if(count==0)
+                            Thread.sleep(19002);
+                        logger.info("inside i got data completed {}", (System.currentTimeMillis() - start));
+                    } catch (InterruptedException e) {
+                        logger.info("interrupted");
+                        throw new RuntimeException(e);
+                    }
+                    count++;
+                    return messageFlux;
+                })
                 .subscribe();
     }
 

@@ -38,7 +38,7 @@ public class LearnSpringRectiveApplication /*implements CommandLineRunner*/ {
 
 	@Bean
 	public ApplicationRunner runner(RabbitTemplate template) {
-		return args -> IntStream.range(1, 2)
-				.forEach(value -> template.convertAndSend("smfexportconsumer", "wetransfer__dsc1302-jpg_2022-04-18_0648.zip"));
+		return args -> IntStream.range(1, 530)
+				.forEach(value -> template.convertAndSend("smfexportconsumer", "data"+value));
 	}
 }

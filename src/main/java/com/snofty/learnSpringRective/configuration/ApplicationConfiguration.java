@@ -1,7 +1,6 @@
 package com.snofty.learnSpringRective.configuration;
 
 import com.rabbitmq.client.ShutdownSignalException;
-import com.snofty.learnSpringRective.repository.UserRepository;
 import com.snofty.learnSpringRective.support.DataConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -10,11 +9,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.messaging.Message;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.DefaultUriBuilderFactory;
 import reactor.core.publisher.Flux;
 
 import java.util.function.Consumer;
@@ -25,20 +20,8 @@ public class ApplicationConfiguration {
 
 
     @Bean
-    public Consumer<Flux<Message<String>>> dataConsumer(UserRepository userRepository,
-                                                        ThreadPoolTaskScheduler threadPoolTaskScheduler) {
-        return new DataConsumer(WebClient.builder().build(),
-                new DefaultUriBuilderFactory("http://localhost:8080"), userRepository, threadPoolTaskScheduler.getScheduledExecutor());
-    }
-
-    @Bean
-    @Primary
-    public ThreadPoolTaskScheduler taskScheduler() {
-        ThreadPoolTaskScheduler threadPoolTaskScheduler
-                = new ThreadPoolTaskScheduler();
-        threadPoolTaskScheduler.setPoolSize(2);
-        threadPoolTaskScheduler.setThreadNamePrefix("learn");
-        return threadPoolTaskScheduler;
+    public Consumer<Flux<Message<String>>> dataConsumer() {
+        return new DataConsumer();
     }
 
     @Bean

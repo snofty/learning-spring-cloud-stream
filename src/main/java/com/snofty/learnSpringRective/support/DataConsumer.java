@@ -16,12 +16,11 @@ import reactor.core.scheduler.Schedulers;
 
 import java.net.URI;
 import java.nio.file.Paths;
-import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 public class DataConsumer implements Consumer<Flux<Message<String>>> {
@@ -32,7 +31,7 @@ public class DataConsumer implements Consumer<Flux<Message<String>>> {
     private final UserRepository userRepository;
     private final ExecutorService executorService;
 
-    private int count=-1;
+    private int count = -1;
 
 
     public DataConsumer(WebClient webClient, DefaultUriBuilderFactory uriBuilderFactory, UserRepository userRepository,
@@ -55,31 +54,49 @@ public class DataConsumer implements Consumer<Flux<Message<String>>> {
                 .onErrorContinue((throwable, o) -> logger.error(throwable.getMessage()))
                 .subscribe();*/
         messageFlux.doOnNext(logger::info)
-                .map(stringMessage -> {
-                    long start = System.currentTimeMillis();
-                    logger.info("inside i got data count: {}", count);
-                    try {
-                        if(count==0)
-                            Thread.sleep(19002);
-                        logger.info("inside i got data completed {}", (System.currentTimeMillis() - start));
-                    } catch (InterruptedException e) {
-                        logger.info("interrupted");
-                        throw new RuntimeException(e);
-                    }
-                    count++;
-                    return messageFlux;
-                })
+                  .limitRate(3)
+                .flatMap(this::processIt)
+                /* .flatMap(stringMessage -> webClient.get().uri(stringMessage.getPayload()).retrieve()
+                         .onStatus(httpStatus -> httpStatus.value() == 404, x -> x.bodyToMono(String.class).flatMap(s -> {logger.info("4xx error");
+                             return Mono.error(() -> new RuntimeException("4xx error"));}
+                         ))
+                         .bodyToMono(String.class).retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(1)).onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> new RuntimeException("retry error"))))
+                 */.doOnNext(logger::info)
+                /* .map(stringMessage -> {
+                     long start = System.currentTimeMillis();
+                     logger.info("inside i got data count: {}", count);
+                     try {
+                         if(count<=2)
+                             Thread.sleep(19002);
+                         logger.info("inside i got data completed {}", (System.currentTimeMillis() - start));
+                     } catch (InterruptedException e) {
+                         logger.info("interrupted");
+                         throw new RuntimeException(e);
+                     }
+                     count++;
+                     return messageFlux;
+                 })*/
+                .onErrorContinue((throwable, o) -> logger.error("got error: " + throwable.getMessage()))
                 .subscribe();
+    }
+
+    private Mono<String> processIt(Message<String> stringMessage) {
+        return Mono.just(stringMessage)
+                .map(Message::getPayload)
+                .flatMap(s -> webClient.get().uri(stringMessage.getPayload()).retrieve().bodyToMono(String.class))
+               // .doOnNext(s -> logger.info("Making API call..."))
+                .publishOn(Schedulers.fromExecutor(executorService))
+                ;
     }
 
     private void downloadHugeFile(Message<String> stringMessage) {
         String payload = stringMessage.getPayload();
-        URI uri = uriBuilderFactory.builder().path("/resources/"+payload).build();
+        URI uri = uriBuilderFactory.builder().path("/resources/" + payload).build();
         //AtomicLong counter = new AtomicLong();
         Flux<DataBuffer> dataBufferFlux = webClient.get().uri(uri).retrieve().bodyToFlux(DataBuffer.class)
                 /*.doOnNext(dataBuffer -> logger.info("got a data buffer {} count {}", dataBuffer.capacity(), counter.incrementAndGet()))*/;
-                logger.info("download in progress...");
-        DataBufferUtils.write(dataBufferFlux, Paths.get("C:/Users/SKunda/Downloads/temp/reactive/"+payload)).block();
+        logger.info("download in progress...");
+        DataBufferUtils.write(dataBufferFlux, Paths.get("C:/Users/SKunda/Downloads/temp/reactive/" + payload)).block();
     }
 
     private Flux<User> getUser(String id) {

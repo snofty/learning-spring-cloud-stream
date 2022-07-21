@@ -14,6 +14,8 @@ import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import reactor.core.publisher.Hooks;
 import reactor.tools.agent.ReactorDebugAgent;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.stream.IntStream;
 
 @SpringBootApplication
@@ -38,7 +40,11 @@ public class LearnSpringRectiveApplication /*implements CommandLineRunner*/ {
 
 	@Bean
 	public ApplicationRunner runner(RabbitTemplate template) {
-		return args -> IntStream.range(1, 530)
-				.forEach(value -> template.convertAndSend("smfexportconsumer", "data"+value));
+		return args -> IntStream.range(1, 200)
+				.forEach(value -> template.convertAndSend("smfexportconsumer", "localhost:8086/playWithDelay?duration="+getDuration(40)));
+	}
+
+	private String getDuration(int value) {
+		return Duration.of(value, ChronoUnit.SECONDS).toString();
 	}
 }

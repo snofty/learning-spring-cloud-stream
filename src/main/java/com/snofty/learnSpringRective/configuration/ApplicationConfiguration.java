@@ -28,7 +28,7 @@ public class ApplicationConfiguration {
     public Consumer<Flux<Message<String>>> dataConsumer(UserRepository userRepository,
                                                         ThreadPoolTaskScheduler threadPoolTaskScheduler) {
         return new DataConsumer(WebClient.builder().build(),
-                new DefaultUriBuilderFactory("http://localhost:8080"), userRepository, threadPoolTaskScheduler.getScheduledExecutor());
+                new DefaultUriBuilderFactory("http://localhost:8085"), userRepository, threadPoolTaskScheduler.getScheduledExecutor());
     }
 
     @Bean
@@ -37,7 +37,7 @@ public class ApplicationConfiguration {
         ThreadPoolTaskScheduler threadPoolTaskScheduler
                 = new ThreadPoolTaskScheduler();
         threadPoolTaskScheduler.setPoolSize(2);
-        threadPoolTaskScheduler.setThreadNamePrefix("learn");
+        threadPoolTaskScheduler.setThreadNamePrefix("learn-reactive");
         return threadPoolTaskScheduler;
     }
 
